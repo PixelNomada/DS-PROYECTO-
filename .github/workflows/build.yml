@@ -1,0 +1,40 @@
+name: DSi-IA
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  build:
+    name: Compilar DSi-IA
+    runs-on: ubuntu-latest
+
+    container:
+      image: devkitpro/devkitarm:20241104
+
+    steps:
+      - name: Descargar codigo
+        uses: actions/checkout@v4
+
+      - name: Ver archivos
+        run: |
+          echo "=== ARCHIVOS ==="
+          ls -la
+
+      - name: Compilar DSi-IA
+        run: make
+
+      - name: Buscar archivo NDS
+        run: |
+          echo "=== NDS GENERADOS ==="
+          find . -type f -name "*.nds" -print
+
+      - name: Guardar NDS
+        uses: actions/upload-artifact@v4
+        with:
+          name: DSi-IA-NDS
+          path: "*.nds"
+          if-no-files-found: error
