@@ -1,7 +1,7 @@
 .SUFFIXES:
 
 ifeq ($(strip $(DEVKITARM)),)
-$(error "DEVKITARM no esta definido")
+$(error "Please set DEVKITARM in your environment.")
 endif
 
 include $(DEVKITARM)/ds_rules
@@ -12,33 +12,53 @@ BUILD := build
 SOURCES := .
 INCLUDES := .
 
-GAME_TITLE := DSi IA
-GAME_SUBTITLE1 := Asistente escolar
-GAME_SUBTITLE2 := Nintendo DS
+ARCH := -march=armv5te -mtune=arm946e-s
 
-CPPFILES := main.cpp
+CFLAGS := -g -Wall -O2 -ffunction-sections -fdata-sections $(ARCH)
+CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions
+ASFLAGS := -g $(ARCH)
 
-export TARGET
-export OUTPUT := $(TARGET)
-export BUILD
-export SOURCES
-export INCLUDES
-export CPPFILES
+LDFLAGS := -specs=ds_arm9.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
-# Para C++ el enlazador debe ser g++, no ld directamente.
+LIBS := -lnds9
+LIBDIRS := $(LIBNDS)
+
+ifneq ($(BUILD),$(notdir $(CURDIR)))
+
+export OUTPUT := $(CURDIR)/$(TARGET)
+
+export VPATH := $(CURDIR)
+
+export DEPSDIR := $(CURDIR)/$(BUILD)
+
+CFILES := $(notdir $(wildcard *.c))
+CPPFILES := $(notdir $(wildcard *.cpp))
+SFILES := $(notdir $(wildcard *.s))
+
+ifeq ($(strip $(CPPFILES)),)
+export LD := $(CC)
+else
 export LD := $(CXX)
+endif
 
-export OFILES := $(CPPFILES:.cpp=.o)
+export OFILES := $(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o)
+
+export INCLUDE := $(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
+                  $(foreach dir,$(LIBDIRS),-I$(dir)/include) \
+                  -I$(CURDIR)/$(BUILD)
+
+export LIBPATHS := $(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 
 .PHONY: all clean
 
 all: $(BUILD)
 
 $(BUILD):
-	@mkdir -p $(BUILD)
+	@mkdir -p $@
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
 clean:
+	@echo clean
 	@rm -rf $(BUILD) $(TARGET).elf $(TARGET).nds $(TARGET).ds.gba
 
 else
@@ -49,9 +69,17 @@ $(OUTPUT).nds: $(OUTPUT).elf
 
 $(OUTPUT).elf: $(OFILES)
 
-%.o: ../%.cpp
+%.o: %.cpp
 	@echo Compilando $<
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -MMD -MP -c $< -o $@
+
+%.o: %.c
+	@echo Compilando $<
+	$(CC) $(CPPFLAGS) $(CFLAGS) -MMD -MP -c $< -o $@
+
+%.o: %.s
+	@echo Ensamblando $<
+	$(CC) $(ASFLAGS) -c $< -o $@
 
 -include $(DEPENDS)
 
