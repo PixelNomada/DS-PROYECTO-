@@ -1,4 +1,4 @@
-name: DSi-IA
+name: Compilar DSi IA
 
 on:
   workflow_dispatch:
@@ -9,45 +9,34 @@ on:
 
 jobs:
   build:
-    name: Compilar DSi-IA
+    name: Nintendo DS
     runs-on: ubuntu-latest
-
-    container:
-      image: devkitpro/devkitarm:20241104
+    container: devkitpro/devkitarm:20241104
 
     steps:
-      - name: Descargar codigo
+      - name: Descargar proyecto
         uses: actions/checkout@v4
 
-      - name: Preparar devkitARM
+      - name: Comprobar devkitARM
         run: |
-          export DEVKITPRO=/opt/devkitpro
-          export DEVKITARM=/opt/devkitpro/devkitARM
-          export PATH=/opt/devkitpro/tools/bin:/opt/devkitpro/devkitARM/bin:$PATH
-
           echo "DEVKITPRO=$DEVKITPRO"
           echo "DEVKITARM=$DEVKITARM"
-          echo "$PATH"
+          test -f "$DEVKITARM/ds_rules"
+          test -x "$DEVKITARM/bin/arm-none-eabi-g++"
+          "$DEVKITARM/bin/arm-none-eabi-g++" --version
 
-          ls -la /opt/devkitpro/devkitARM/bin
-          /opt/devkitpro/devkitARM/bin/arm-none-eabi-gcc --version
+      - name: Compilar
+        run: make V=1
 
-      - name: Compilar DSi-IA
-        env:
-          DEVKITPRO: /opt/devkitpro
-          DEVKITARM: /opt/devkitpro/devkitARM
-          PATH: /opt/devkitpro/tools/bin:/opt/devkitpro/devkitARM/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      - name: Comprobar NDS
         run: |
-          make V=1
+          ls -lh
+          test -f DSi-IA.nds
+          echo "NDS generado correctamente."
 
-      - name: Buscar NDS
-        run: |
-          echo "=== ARCHIVOS NDS ==="
-          find . -type f -name "*.nds" -print
-
-      - name: Guardar NDS
+      - name: Subir NDS
         uses: actions/upload-artifact@v4
         with:
           name: DSi-IA-NDS
-          path: "*.nds"
+          path: DSi-IA.nds
           if-no-files-found: error
