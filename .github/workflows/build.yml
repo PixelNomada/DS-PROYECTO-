@@ -19,17 +19,30 @@ jobs:
       - name: Descargar codigo
         uses: actions/checkout@v4
 
-      - name: Ver archivos
+      - name: Preparar devkitARM
         run: |
-          echo "=== ARCHIVOS ==="
-          ls -la
+          export DEVKITPRO=/opt/devkitpro
+          export DEVKITARM=/opt/devkitpro/devkitARM
+          export PATH=/opt/devkitpro/tools/bin:/opt/devkitpro/devkitARM/bin:$PATH
+
+          echo "DEVKITPRO=$DEVKITPRO"
+          echo "DEVKITARM=$DEVKITARM"
+          echo "$PATH"
+
+          ls -la /opt/devkitpro/devkitARM/bin
+          /opt/devkitpro/devkitARM/bin/arm-none-eabi-gcc --version
 
       - name: Compilar DSi-IA
-        run: make
-
-      - name: Buscar archivo NDS
+        env:
+          DEVKITPRO: /opt/devkitpro
+          DEVKITARM: /opt/devkitpro/devkitARM
+          PATH: /opt/devkitpro/tools/bin:/opt/devkitpro/devkitARM/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
         run: |
-          echo "=== NDS GENERADOS ==="
+          make V=1
+
+      - name: Buscar NDS
+        run: |
+          echo "=== ARCHIVOS NDS ==="
           find . -type f -name "*.nds" -print
 
       - name: Guardar NDS
