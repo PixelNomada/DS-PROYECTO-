@@ -15,12 +15,16 @@ INCLUDES := .
 ARCH := -march=armv5te -mtune=arm946e-s
 
 CFLAGS := -g -Wall -O2 -ffunction-sections -fdata-sections $(ARCH)
+CFLAGS += $(INCLUDE) -DARM9
+
 CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions
+
 ASFLAGS := -g $(ARCH)
 
 LDFLAGS := -specs=ds_arm9.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
 LIBS := -lnds9
+
 LIBDIRS := $(LIBNDS)
 
 ifneq ($(BUILD),$(notdir $(CURDIR)))
@@ -41,7 +45,9 @@ else
 export LD := $(CXX)
 endif
 
-export OFILES := $(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o)
+export OFILES := $(CPPFILES:.cpp=.o) \
+                 $(CFILES:.c=.o) \
+                 $(SFILES:.s=.o)
 
 export INCLUDE := $(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
                   $(foreach dir,$(LIBDIRS),-I$(dir)/include) \
@@ -58,7 +64,6 @@ $(BUILD):
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
 clean:
-	@echo clean
 	@rm -rf $(BUILD) $(TARGET).elf $(TARGET).nds $(TARGET).ds.gba
 
 else
@@ -84,3 +89,4 @@ $(OUTPUT).elf: $(OFILES)
 -include $(DEPENDS)
 
 endif
+
